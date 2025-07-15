@@ -14,84 +14,126 @@ use Magento\Framework\Exception\InvalidEmailOrPasswordException;
 use PHPUnit\Framework\TestCase;
 use Vivlavoni\DisableLoginAndCreateAccount\Model\Config\ConfigProvider;
 use Vivlavoni\DisableLoginAndCreateAccount\Plugin\DisableLogin;
+use Magento\Customer\Api\CustomerRepositoryInterface;
 
 class DisableLoginTest extends TestCase
 {
     /**
-     * @var DisableLogin
-     */
-    private DisableLogin $plugin;
-
-    /**
      * @var ConfigProvider
      */
-    private ConfigProvider $configProviderMock;
+    private $configProvider;
+
+    /**
+     * @var CustomerRepositoryInterface
+     */
+    private $customerRepository;
+
+    /**
+     * @var AccountManagement
+     */
+    private $accountManagement;
+
+    /**
+     * @var DisableLogin
+     */
+    private $disableLogin;
 
     protected function setUp(): void
     {
-        $this->configProviderMock = $this->createMock(ConfigProvider::class);
-        $this->plugin = new DisableLogin($this->configProviderMock);
+        $this->configProvider = $this->createMock(ConfigProvider::class);
+        $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $this->accountManagement = $this->createMock(AccountManagement::class);
+        $this->disableLogin = new DisableLogin($this->configProvider, $this->customerRepository);
     }
 
-    public function testBeforeAuthenticateWhenFeatureDisabled(): void
+    public function testBeforeAuthenticateLoginDisabled(): void
     {
-        $this->configProviderMock->method('isEnabled')->willReturn(false);
+        $this->configProvider
+            ->method('isEnabled')
+            ->willReturn(false);
 
-        $accountManagementMock = $this->createMock(AccountManagement::class);
+        $this->configProvider
+            ->expects($this->never())
+            ->method('isLoginEnabled');
 
-        $username = 'test@example.com';
-        $password = 'password';
+        $result = $this->disableLogin->beforeAuthenticate(
+            $this->accountManagement,
+            'test@example.com',
+            'password123'
+        );
 
-        $result = $this->plugin->beforeAuthenticate($accountManagementMock, $username, $password);
-
-        $this->assertSame([$username, $password], $result);
+        $this->assertSame(['test@example.com', 'password123'], $result);
     }
 
-    public function testBeforeAuthenticateWhenLoginEnabledAndEmailNotAllowed(): void
+    public function testBeforeAuthenticateThrowsExceptionWhenLoginDisabledByCustomerConfig(): void
     {
-        $this->configProviderMock->method('isEnabled')->willReturn(true);
-        $this->configProviderMock->method('isLoginEnabled')->willReturn(true);
-        $this->configProviderMock->method('detectAllLoginEmailsAllowed')->willReturn(false);
+        $customerMock = $this->createMock(\Magento\Customer\Api\Data\CustomerInterface::class);
+        $attributeMock = $this->createMock(\Magento\Framework\Api\AttributeInterface::class);
 
-        $accountManagementMock = $this->createMock(AccountManagement::class);
+        $this->configProvider
+            ->method('isEnabled')
+            ->willReturn(true);
 
-        $username = 'test@example.com';
-        $password = 'password';
+        $this->configProvider
+            ->method('isLoginEnabled')
+            ->willReturn(true);
 
-        $result = $this->plugin->beforeAuthenticate($accountManagementMock, $username, $password);
+        $customerMock
+            ->method('getCustomAttribute')
+            ->with('is_use_config_disabled_login')
+            ->willReturn($attributeMock);
 
-        $this->assertSame([$username, $password], $result);
-    }
+        $attributeMock
+            ->method('getValue')
+            ->willReturn(true);
 
-    public function testBeforeAuthenticateWhenLoginEnabledAndEmailAllowed(): void
-    {
-        $this->configProviderMock->method('isEnabled')->willReturn(true);
-        $this->configProviderMock->method('isLoginEnabled')->willReturn(true);
-        $this->configProviderMock->method('detectAllLoginEmailsAllowed')->willReturn(true);
+        $this->customerRepository
+            ->method('get')
+            ->with('test@example.com')
+            ->willReturn($customerMock);
 
-        $accountManagementMock = $this->createMock(AccountManagement::class);
+        $this->configProvider
+            ->method('detectAllLoginEmailsAllowed')
+            ->with('test@example.com')
+            ->willReturn(true);
 
-        $username = 'test@example.com';
-        $password = 'password';
-
-        $this->expectException(InvalidEmailOrPasswordException::class);
+        $this->expectException(\Magento\Framework\Exception\InvalidEmailOrPasswordException::class);
         $this->expectExceptionMessage('Login is temporarily disabled.');
 
-        $this->plugin->beforeAuthenticate($accountManagementMock, $username, $password);
+        $this->disableLogin->beforeAuthenticate(
+            $this->accountManagement,
+            'test@example.com',
+            'password123'
+        );
     }
 
-    public function testBeforeAuthenticateWhenLoginDisabled(): void
+    public function testBeforeAuthenticateThrowsExceptionWhenAllEmailsRestricted(): void
     {
-        $this->configProviderMock->method('isEnabled')->willReturn(true);
-        $this->configProviderMock->method('isLoginEnabled')->willReturn(false);
+        $this->configProvider
+            ->method('isEnabled')
+            ->willReturn(true);
 
-        $accountManagementMock = $this->createMock(AccountManagement::class);
+        $this->configProvider
+            ->method('isLoginEnabled')
+            ->willReturn(true);
 
-        $username = 'test@example.com';
-        $password = 'password';
+        $this->customerRepository
+            ->method('get')
+            ->with('test@example.com')
+            ->willThrowException(new \Exception('No such customer'));
 
-        $result = $this->plugin->beforeAuthenticate($accountManagementMock, $username, $password);
+        $this->configProvider
+            ->method('detectAllLoginEmailsAllowed')
+            ->with('test@example.com')
+            ->willReturn(true);
 
-        $this->assertSame([$username, $password], $result);
+        $this->expectException(\Magento\Framework\Exception\InvalidEmailOrPasswordException::class);
+        $this->expectExceptionMessage('Login is temporarily disabled.');
+
+        $this->disableLogin->beforeAuthenticate(
+            $this->accountManagement,
+            'test@example.com',
+            'password123'
+        );
     }
 }

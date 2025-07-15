@@ -11,15 +11,18 @@ namespace Vivlavoni\DisableLoginAndCreateAccount\Plugin;
 
 use Magento\Customer\Model\AccountManagement;
 use Magento\Framework\Exception\InvalidEmailOrPasswordException;
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Vivlavoni\DisableLoginAndCreateAccount\Model\Config\ConfigProvider;
 
 class DisableLogin
 {
     /**
      * @param ConfigProvider $configProvider
+     * @param CustomerRepositoryInterface $customerRepository
      */
     public function __construct(
-        private readonly ConfigProvider $configProvider
+        private readonly ConfigProvider $configProvider,
+        private readonly CustomerRepositoryInterface $customerRepository
     ) {
     }
 
@@ -38,11 +41,45 @@ class DisableLogin
             return [$username, $password];
         }
 
-        if ($this->configProvider->isLoginEnabled()
-            && $this->configProvider->detectAllLoginEmailsAllowed((string) $username)) {
-            throw new InvalidEmailOrPasswordException(__('Login is temporarily disabled.'));
+        $customer = $this->getCustomerByEmail((string) $username);
+
+        if ($this->configProvider->isLoginEnabled()) {
+            if ($customer && $customer->getCustomAttribute('is_use_config_disabled_login')) {
+                $useConfig = (bool )$customer->getCustomAttribute('is_use_config_disabled_login')
+                    ->getValue();
+
+                if ($useConfig && $this->configProvider->detectAllLoginEmailsAllowed((string) $username)) {
+                        throw new InvalidEmailOrPasswordException(__('Login is temporarily disabled.'));
+                } else {
+                    if ($customer->getCustomAttribute('is_disabled_login')
+                        && $customer->getCustomAttribute('is_disabled_login')->getValue()) {
+                        throw new InvalidEmailOrPasswordException(__('Login is temporarily disabled.'));
+                    }
+                }
+            } else {
+                if ($this->configProvider->detectAllLoginEmailsAllowed((string) $username)) {
+                    throw new InvalidEmailOrPasswordException(__('Login is temporarily disabled.'));
+                }
+            }
         }
 
         return [$username, $password];
+    }
+
+    /**
+     * Retrieves a customer by their email address.
+     *
+     * @param string $email The email address of the customer to retrieve.
+     * @return \Magento\Customer\Api\Data\CustomerInterface|null
+     */
+    private function getCustomerByEmail(string $email): ?\Magento\Customer\Api\Data\CustomerInterface
+    {
+        try {
+            $customer = $this->customerRepository->get($email);
+        } catch (\Exception $exception) {
+            return null;
+        }
+
+        return $customer;
     }
 }

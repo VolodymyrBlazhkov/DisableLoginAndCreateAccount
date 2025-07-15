@@ -1,6 +1,6 @@
 {
     "name": "vivlavoni/module-disable-login-and-create-account",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Disable login and create account for customers",
     "type": "magento2-module",
     "require": {
