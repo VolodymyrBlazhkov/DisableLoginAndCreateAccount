@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="vivlavoni" translate="label" sortOrder="345">
+          <label>ViVlaVoNi Central</label>
+        </tab>
+        <section id="vivlavoni_customer"
+                 translate="label"
+                 type="text"
+                 sortOrder="10"
+                 showInDefault="1"
+                 showInWebsite="1"
+                 showInStore="1">
+            <label>Customer configuration</label>
+            <tab>vivlavoni</tab>
+            <resource>Vivlavoni_DisableLoginAndCreateAccount::general</resource>
+            <group id="customer" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Disabled Customer create account and login</label>
+                <field id="is_enabled"
+                       translate="label"
+                       type="select"
+                       sortOrder="10"
+                       showInDefault="1"
+                       showInWebsite="0"
+                       showInStore="0"
+                       canRestore="1">
+                    <label>Enable</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="is_login_enabled"
+                       translate="label"
+                       type="select"
+                       sortOrder="20"
+                       showInDefault="1"
+                       showInWebsite="0"
+                       showInStore="0"
+                       canRestore="1">
+                    <label>Enable Login only for selected customers</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[If you enable this config only customers from allowed list can login]]></comment>
+                    <depends>
+                        <field id="is_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="destination_login_emails_allowed"
+                       translate="label comment"
+                       type="textarea"
+                       sortOrder="30"
+                       showInDefault="1"
+                       showInWebsite="0"
+                       showInStore="0">
+                    <label>Lis of allowed emails to login</label>
+                    <comment>Allows email sending only if destination is equal to one of the following emails. Emails should be separated by newline.</comment>
+                    <depends>
+                        <field id="is_login_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="is_create_enabled"
+                       translate="label"
+                       type="select"
+                       sortOrder="40"
+                       showInDefault="1"
+                       showInWebsite="0"
+                       showInStore="0"
+                       canRestore="1">
+                    <label>Enable Create account only for selected customers</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[If you enable this config only customers from allowed list can create account]]></comment>
+                    <depends>
+                        <field id="is_enabled">1</field>
+                    </depends>
+                </field>
+                <field id="destination_create_emails_allowed"
+                       translate="label comment"
+                       type="textarea"
+                       sortOrder="50"
+                       showInDefault="1"
+                       showInWebsite="0"
+                       showInStore="0">
+                    <label>Lis of allowed emails to create account</label>
+                    <comment>Allows email sending only if destination is equal to one of the following emails. Emails should be separated by newline.</comment>
+                    <depends>
+                        <field id="is_create_enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

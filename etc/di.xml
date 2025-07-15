@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Customer\Model\AccountManagement">
+        <plugin name="Vivlavoni_DisableLoginAndCreateAccount::DisableLogin"
+                type="Vivlavoni\DisableLoginAndCreateAccount\Plugin\DisableLogin"
+                sortOrder="55"/>
+        <plugin name="Vivlavoni_DisableLoginAndCreateAccount::DisableCreateAccount"
+                type="Vivlavoni\DisableLoginAndCreateAccount\Plugin\DisableCreateAccount"
+                sortOrder="55"/>
+    </type>
+</config>

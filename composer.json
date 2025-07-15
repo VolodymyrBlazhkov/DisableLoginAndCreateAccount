@@ -1,0 +1,22 @@
+{
+    "name": "vivlavoni/module-disable-login-and-create-account",
+    "version": "0.1.0",
+    "description": "Disable login and create account for customers",
+    "type": "magento2-module",
+    "require": {
+        "php": "^7.4 || ^8.1",
+        "magento/framework": "^103.0"
+    },
+    "license": [
+        "OSL-3.0",
+        "AFL-3.0"
+    ],
+    "autoload": {
+        "files": [
+          "registration.php"
+        ],
+        "psr-4": {
+          "Vivlavoni\\DisableLoginAndCreateAccount\\": ""
+        }
+    }
+}
